@@ -7,7 +7,7 @@
 int main(int argc, char *argv[])
 {
     if (argc != 3) {
-        perror("pipes");
+        perror("pipes"); //нет нужного кол-ва аргументов
         exit(EXIT_FAILURE);
     }
 
