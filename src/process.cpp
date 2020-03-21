@@ -11,56 +11,63 @@ Process::Process(const std::string& path)
 {
     //Две пайпы, одна соединяет read родительского и stdout дочернего процесса
     //другая соединяет write родительского и stdin дочернего процесса
+    int pipefdIn[2];
+    int pipefdOut[2];
+    isReadableFlag = false;
+
     if (pipe(pipefdIn) == -1) {
-        perror("pipeIn");
-        throw "Error open Pipe write";
+        throw std::exception();
     }
 
     if (pipe(pipefdOut) == -1) {
-        perror("pipeOut");
-        throw "Error open Pipe read";
+        throw std::exception();
     }
 
     cpid = fork();
     if (cpid == -1) {
-        perror("fork");
-        throw "fork";
+        throw std::exception();
     }
 
     if (cpid == 0) { //Child
         ::close(pipefdIn[1]);
         ::close(pipefdOut[0]);
 
-        char sTempPipeIn[32];
-        char sTempPipeOut[32];
+        dup2(pipefdIn[0], STDIN_FILENO);
+        dup2(pipefdOut[1], STDOUT_FILENO);
 
-        sprintf(sTempPipeIn, "%d", pipefdIn[0]);
-        sprintf(sTempPipeOut, "%d", pipefdOut[1]);
-
-        //передаем концы пайп как аргументы в дочерний процесс
-        if (execl(path.data(), path.data(), sTempPipeIn, sTempPipeOut) == -1) {
-            throw "Error execl";
+        if (execl(path.data(), path.data()) == -1) {
+            throw std::exception();
         }
     }
     else { //Parent
         ::close(pipefdIn[0]);
         ::close(pipefdOut[1]);
+
+        pipefd_in = pipefdIn[1];
+        pipefd_out = pipefdOut[0];
+
+        isReadableFlag = true;
     }
 }
 
 Process::~Process()
 {
-    kill(cpid, SIGTERM); //посылаем сигнал на выключение дочернего процесса (?)
-    waitpid(cpid, NULL, 0); //ждем завершения дочернего процесса (?)
+    closeStdin();
+    closeStdout();
+    close();
 }
 
 //пишет определенное количество байт в поток ввода дочернего процесса,
-//соединенного через пайп; вся проверка на пользователе
+//соединенного через пайп;
 size_t Process::write(const void* data, size_t len)
 {
-    size_t numByte = ::write(pipefdIn[1], data, len);
+    ssize_t numByte = ::write(pipefd_in, data, len);
 
-    return numByte;
+    if (numByte < 0) { //если произошла ошибка записи
+        throw std::exception();
+    }
+
+    return numByte; //неявное преобразование, здесь numByte >= 0 всегда
 }
 
 //пишет определенное количество байт в поток ввода дочернего процесса,
@@ -68,26 +75,30 @@ size_t Process::write(const void* data, size_t len)
 void Process::writeExact(const void* data, size_t len)
 {
     size_t s = 0;
-    size_t tempS = 0;
+    ssize_t tempS = 0;
 
     while (s < len) {
-        tempS = ::write(pipefdIn[1], data, len);
+        tempS = ::write(pipefd_in, data, len);
 
-        if (tempS < 0) {
-            throw "Error";
+        if (tempS < 0) { //если произошла ошибка записи
+            throw std::exception();
         }
 
-        s += tempS;
+        s += tempS; //неявное преобразование, здесь numByte >= 0 всегда
     }
 }
 
 //читает определенное количество байт с потока вывода дочернего процесса,
-//соединенного через пайп; вся проверка на пользователе
+//соединенного через пайп;
 size_t Process::read(void* data, size_t len)
 {
-    size_t numByte = ::read(pipefdOut[0], data, len);
+    ssize_t numByte = ::read(pipefd_out, data, len);
 
-    return numByte;
+    if (numByte < 0) { //если произошла ошибка чтения
+        throw std::exception();
+    }
+
+    return numByte; //неявное преобразование, здесь numByte >= 0 всегда
 }
 
 //читает определенное количество байт с потока вывода дочернего процесса,
@@ -95,39 +106,42 @@ size_t Process::read(void* data, size_t len)
 void Process::readExact(void* data, size_t len)
 {
     size_t s = 0;
-    size_t tempS = 0;
-    char tempData[len];
+    ssize_t tempS = 0;
 
     while (s < len) {
-        tempS = ::read(pipefdOut[0], tempData, len - s);
+        tempS = ::read(pipefd_out, (char*)data + s, len - s);
 
-        if (tempS < 0) {
-            throw "Error";
+        if (tempS < 0) { //если произошла ошибка чтения
+            throw std::exception();
         }
 
-        for ( int i = 0; i < tempS; i++) {
-            ((char*)data)[s + i] = tempData[i];
-        }
-
-        s += tempS;
+        s += tempS; //неявное преобразование, здесь numByte >= 0 всегда
     }
 }
 
 //проверка - открыт ли пайп для чтения
 bool Process::isReadable() const
 {
-    return !::read(pipefdOut[0], NULL, 0);
+    return isReadableFlag;
 }
 
 //закрытие пайпа для записи
 void Process::closeStdin()
 {
-    ::close(pipefdIn[1]);
+    ::close(pipefd_in);
 }
 
-//закрытие всех пайп
+//закрытие пайпа для чтения
+void Process::closeStdout()
+{
+    ::close(pipefd_out);
+
+    isReadableFlag = false;
+}
+
+//закрытие процесса
 void Process::close()
 {
-    ::close(pipefdOut[0]);
-    ::close(pipefdIn[1]);
+    kill(cpid, SIGTERM); //посылаем сигнал на выключение дочернего процесса
+    waitpid(cpid, NULL, 0);
 }

@@ -1,27 +1,47 @@
 #include <iostream>
+#include <string>
+
 #include "process.h"
 
-int main()
+int main(int argc, char *argv[])
 {
     Process oneProc = Process("homeProc1");
-    std::cout << "Number of written bytes - " << oneProc.write("test message\n", 13) << std::endl;
-    oneProc.writeExact("123456", 6);
 
-    char* tempStr = new char[255];
+    while (std::cin) {
+        if (oneProc.isReadable()) {
+            std::string tempStrIn;
+            size_t numWrite = 0;
+            size_t numRead = 0;
+            char buff[256] = {}; //буфер для вывода, должен быть больше,
+                                 //чем планируется считать
 
-    if (oneProc.isReadable()) {
-        std::cout << "Number of read bytes - " << oneProc.read(tempStr, 5) << std::endl; //считает сколько получится байт
-        std::cout << "Read - " << tempStr << std::endl;
+            std::cout << "Input str: ";
+            std::getline(std::cin, tempStrIn);
 
-        oneProc.readExact((void*)tempStr, 14); //"зависнет" пока не считает все 14 байт
-        std::cout << "ReadExact - " << tempStr << std::endl;
-    }
+            if ( tempStrIn == "exit") {
+                oneProc.closeStdin();
+                oneProc.closeStdout();
+                continue;
+            }
 
-    oneProc.closeStdin();
-    oneProc.close();
+            std::cout << "Number of char to write: ";
+            std::cin >> numWrite;
 
-    if (!oneProc.isReadable()) {
-        std::cout << "pipe to read is closed" << std::endl;
+            std::cout << "Number of char to read: ";
+            std::cin >> numRead;
+
+            //std::cout << "Number of written bytes - " << oneProc.write(tempStrIn, numWrite) << std::endl;
+            oneProc.writeExact(tempStrIn.data(), numWrite); //гарантированно записать numWrite символов
+
+            //std::cout << "Number of read bytes - " << oneProc.read(&buff, numRead) << std::endl;
+            oneProc.readExact(&buff, numRead); //гарантированно считать numRead символов
+            std::cout << "Output str: " << buff << std::endl << std::endl;
+            std::cin.get();
+        } else
+        {
+            std::cout << "Pipe isn't readable / closed" << std::endl;
+            break;
+        }
     }
 
     return 0;

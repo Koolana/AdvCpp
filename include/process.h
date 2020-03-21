@@ -17,15 +17,18 @@ public:
     void readExact(void* data, size_t len);
 
     bool isReadable() const;
+
     void closeStdin();
+    void closeStdout();
 
     void close();
 private:
-    char buf;
-
     pid_t cpid;
-    int pipefdIn[2];
-    int pipefdOut[2];
+
+    int pipefd_in;
+    int pipefd_out;
+
+    bool isReadableFlag;
 };
 
 #endif //PROCESS_H

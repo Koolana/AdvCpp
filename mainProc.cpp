@@ -3,17 +3,10 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <cstdlib>
+#include <exception>
 
 int main(int argc, char *argv[])
 {
-    if (argc != 3) {
-        perror("pipes"); //нет нужного кол-ва аргументов
-        exit(EXIT_FAILURE);
-    }
-
-    dup2(std::atoi(argv[1]), STDIN_FILENO);
-    dup2(std::atoi(argv[2]), STDOUT_FILENO);
-
     char buffer[256];
 
     while (!feof(stdin))
@@ -24,9 +17,6 @@ int main(int argc, char *argv[])
         fflush(stdout); //флашем в stdout, чтобы не ждать EOF от закрытия пайпы,
                         //а сразу можно было считать данные через read в родительском процессе
     }
-
-    close(STDIN_FILENO);
-    close(STDOUT_FILENO);
 
     return 0;
 }
