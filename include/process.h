@@ -19,7 +19,6 @@ public:
     bool isReadable() const;
 
     void closeStdin();
-    void closeStdout();
 
     void close();
 private:

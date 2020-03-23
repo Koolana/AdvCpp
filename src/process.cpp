@@ -16,16 +16,25 @@ Process::Process(const std::string& path)
     isReadableFlag = false;
 
     if (pipe(pipefdIn) == -1) {
-        throw std::exception();
+        throw std::runtime_error("Error creating pipe in");
     }
 
     if (pipe(pipefdOut) == -1) {
-        throw std::exception();
+        ::close(pipefdIn[0]); //закрытие первой пайпы,
+        ::close(pipefdIn[1]); //если создание второй провалилось
+
+        throw std::runtime_error("Error creating pipe out");
     }
 
     cpid = fork();
     if (cpid == -1) {
-        throw std::exception();
+        ::close(pipefdIn[0]); //закрытие первой пайпы,
+        ::close(pipefdIn[1]); //если fork() провалился
+
+        ::close(pipefdOut[0]); //закрытие второй пайпы,
+        ::close(pipefdOut[1]); //если fork() провалился
+
+        throw std::runtime_error("Error fork()");
     }
 
     if (cpid == 0) { //Child
@@ -36,7 +45,7 @@ Process::Process(const std::string& path)
         dup2(pipefdOut[1], STDOUT_FILENO);
 
         if (execl(path.data(), path.data()) == -1) {
-            throw std::exception();
+            throw std::runtime_error("Error execl() in child");
         }
     }
     else { //Parent
@@ -52,8 +61,6 @@ Process::Process(const std::string& path)
 
 Process::~Process()
 {
-    closeStdin();
-    closeStdout();
     close();
 }
 
@@ -64,7 +71,7 @@ size_t Process::write(const void* data, size_t len)
     ssize_t numByte = ::write(pipefd_in, data, len);
 
     if (numByte < 0) { //если произошла ошибка записи
-        throw std::exception();
+        throw std::runtime_error("Error write");
     }
 
     return numByte; //неявное преобразование, здесь numByte >= 0 всегда
@@ -75,16 +82,16 @@ size_t Process::write(const void* data, size_t len)
 void Process::writeExact(const void* data, size_t len)
 {
     size_t s = 0;
-    ssize_t tempS = 0;
+    ssize_t numByte = 0;
 
     while (s < len) {
-        tempS = ::write(pipefd_in, data, len);
+        numByte = ::write(pipefd_in, (char*)data + s, len - s);
 
-        if (tempS < 0) { //если произошла ошибка записи
-            throw std::exception();
+        if (numByte < 0) { //если произошла ошибка записи
+            throw std::runtime_error("Error writeExact");
         }
 
-        s += tempS; //неявное преобразование, здесь numByte >= 0 всегда
+        s += numByte; //неявное преобразование, здесь numByte >= 0 всегда
     }
 }
 
@@ -95,7 +102,7 @@ size_t Process::read(void* data, size_t len)
     ssize_t numByte = ::read(pipefd_out, data, len);
 
     if (numByte < 0) { //если произошла ошибка чтения
-        throw std::exception();
+        throw std::runtime_error("Error read");
     }
 
     return numByte; //неявное преобразование, здесь numByte >= 0 всегда
@@ -106,16 +113,16 @@ size_t Process::read(void* data, size_t len)
 void Process::readExact(void* data, size_t len)
 {
     size_t s = 0;
-    ssize_t tempS = 0;
+    ssize_t numByte = 0;
 
     while (s < len) {
-        tempS = ::read(pipefd_out, (char*)data + s, len - s);
+        numByte = ::read(pipefd_out, (char*)data + s, len - s);
 
-        if (tempS < 0) { //если произошла ошибка чтения
-            throw std::exception();
+        if (numByte < 0) { //если произошла ошибка чтения
+            throw std::runtime_error("Error readExact");
         }
 
-        s += tempS; //неявное преобразование, здесь numByte >= 0 всегда
+        s += numByte; //неявное преобразование, здесь tempS >= 0 всегда
     }
 }
 
@@ -131,17 +138,14 @@ void Process::closeStdin()
     ::close(pipefd_in);
 }
 
-//закрытие пайпа для чтения
-void Process::closeStdout()
-{
-    ::close(pipefd_out);
-
-    isReadableFlag = false;
-}
-
 //закрытие процесса
 void Process::close()
 {
+    isReadableFlag = false;
+
+    ::close(pipefd_in);
+    ::close(pipefd_out);
+
     kill(cpid, SIGTERM); //посылаем сигнал на выключение дочернего процесса
     waitpid(cpid, NULL, 0);
 }

@@ -19,8 +19,7 @@ int main(int argc, char *argv[])
             std::getline(std::cin, tempStrIn);
 
             if ( tempStrIn == "exit") {
-                oneProc.closeStdin();
-                oneProc.closeStdout();
+                oneProc.close();
                 continue;
             }
 
