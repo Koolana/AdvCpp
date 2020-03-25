@@ -9,51 +9,26 @@
 
 Process::Process(const std::string& path)
 {
-    //Две пайпы, одна соединяет read родительского и stdout дочернего процесса
-    //другая соединяет write родительского и stdin дочернего процесса
-    int pipefdIn[2];
-    int pipefdOut[2];
-    isReadableFlag = false;
-
-    if (pipe(pipefdIn) == -1) {
-        throw std::runtime_error("Error creating pipe in");
-    }
-
-    if (pipe(pipefdOut) == -1) {
-        ::close(pipefdIn[0]); //закрытие первой пайпы,
-        ::close(pipefdIn[1]); //если создание второй провалилось
-
-        throw std::runtime_error("Error creating pipe out");
-    }
-
+    //Две пайпы, одна обеспечивает доступ для чтения, другая для записи
     cpid = fork();
     if (cpid == -1) {
-        ::close(pipefdIn[0]); //закрытие первой пайпы,
-        ::close(pipefdIn[1]); //если fork() провалился
-
-        ::close(pipefdOut[0]); //закрытие второй пайпы,
-        ::close(pipefdOut[1]); //если fork() провалился
-
         throw std::runtime_error("Error fork()");
     }
 
     if (cpid == 0) { //Child
-        ::close(pipefdIn[1]);
-        ::close(pipefdOut[0]);
+        pipe2write.closeIn(); //закрытие неиспользуемых концов пайп
+        pipe2read.closeOut(); //чтобы их случайно не использовать
 
-        dup2(pipefdIn[0], STDIN_FILENO);
-        dup2(pipefdOut[1], STDOUT_FILENO);
+        dup2(pipe2write.getPipeOutfd(), STDIN_FILENO);
+        dup2(pipe2read.getPipeInfd(), STDOUT_FILENO);
 
         if (execl(path.data(), path.data()) == -1) {
             throw std::runtime_error("Error execl() in child");
         }
     }
     else { //Parent
-        ::close(pipefdIn[0]);
-        ::close(pipefdOut[1]);
-
-        pipefd_in = pipefdIn[1];
-        pipefd_out = pipefdOut[0];
+        pipe2write.closeOut(); //закрытие неиспользуемых концов пайп
+        pipe2read.closeIn(); //чтобы их случайно не использовать
 
         isReadableFlag = true;
     }
@@ -65,68 +40,42 @@ Process::~Process()
 }
 
 //пишет определенное количество байт в поток ввода дочернего процесса,
-//соединенного через пайп;
+//соединенного через pipe2write;
 size_t Process::write(const void* data, size_t len)
 {
-    ssize_t numByte = ::write(pipefd_in, data, len);
-
-    if (numByte < 0) { //если произошла ошибка записи
-        throw std::runtime_error("Error write");
-    }
-
-    return numByte; //неявное преобразование, здесь numByte >= 0 всегда
+    return pipe2write.write(data, len);
 }
 
 //пишет определенное количество байт в поток ввода дочернего процесса,
-//соединенного через пайп; "зависнет", пока все не запишет
+//соединенного через pipe2write; "зависнет", пока все не запишет
 void Process::writeExact(const void* data, size_t len)
 {
     size_t s = 0;
-    ssize_t numByte = 0;
 
     while (s < len) {
-        numByte = ::write(pipefd_in, (char*)data + s, len - s);
-
-        if (numByte < 0) { //если произошла ошибка записи
-            throw std::runtime_error("Error writeExact");
-        }
-
-        s += numByte; //неявное преобразование, здесь numByte >= 0 всегда
+        s += pipe2write.write((char*)data + s, len - s);
     }
 }
 
 //читает определенное количество байт с потока вывода дочернего процесса,
-//соединенного через пайп;
+//соединенного через pipe2read;
 size_t Process::read(void* data, size_t len)
 {
-    ssize_t numByte = ::read(pipefd_out, data, len);
-
-    if (numByte < 0) { //если произошла ошибка чтения
-        throw std::runtime_error("Error read");
-    }
-
-    return numByte; //неявное преобразование, здесь numByte >= 0 всегда
+    return pipe2read.read(data, len);
 }
 
 //читает определенное количество байт с потока вывода дочернего процесса,
-//соединенного через пайп; "зависнет", пока все их не считает
+//соединенного через pipe2read; "зависнет", пока все их не считает
 void Process::readExact(void* data, size_t len)
 {
     size_t s = 0;
-    ssize_t numByte = 0;
 
     while (s < len) {
-        numByte = ::read(pipefd_out, (char*)data + s, len - s);
-
-        if (numByte < 0) { //если произошла ошибка чтения
-            throw std::runtime_error("Error readExact");
-        }
-
-        s += numByte; //неявное преобразование, здесь tempS >= 0 всегда
+        s += pipe2read.read((char*)data + s, len - s);
     }
 }
 
-//проверка - открыт ли пайп для чтения
+//проверка - возможно ли чтение
 bool Process::isReadable() const
 {
     return isReadableFlag;
@@ -135,17 +84,17 @@ bool Process::isReadable() const
 //закрытие пайпа для записи
 void Process::closeStdin()
 {
-    ::close(pipefd_in);
+    pipe2write.closeIn();
 }
 
 //закрытие процесса
 void Process::close()
 {
+    pipe2write.closeIn(); //закрытие всех пайп, ведущих к дочернему процессу
+    pipe2read.closeOut(); //перед его завершением
+
     isReadableFlag = false;
 
-    ::close(pipefd_in);
-    ::close(pipefd_out);
-
     kill(cpid, SIGTERM); //посылаем сигнал на выключение дочернего процесса
-    waitpid(cpid, NULL, 0);
+    waitpid(cpid, NULL, 0); //ждем выключения дочернего процесса
 }

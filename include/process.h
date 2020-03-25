@@ -3,6 +3,7 @@
 
 #include <unistd.h>
 #include <iostream>
+#include "pipe.h"
 
 class Process
 {
@@ -24,8 +25,8 @@ public:
 private:
     pid_t cpid;
 
-    int pipefd_in;
-    int pipefd_out;
+    Pipe pipe2read;  //создает пайп конструктором по умолчанию,
+    Pipe pipe2write; //при выходе из зоны видимости обеспечивает его закрытие
 
     bool isReadableFlag;
 };
