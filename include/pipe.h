@@ -3,7 +3,6 @@
 
 #include <unistd.h>
 #include <stdexcept>
-#include <iostream>
 
 class Pipe
 {

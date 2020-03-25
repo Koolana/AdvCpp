@@ -9,7 +9,6 @@
 
 Process::Process(const std::string& path)
 {
-    //Две пайпы, одна обеспечивает доступ для чтения, другая для записи
     cpid = fork();
     if (cpid == -1) {
         throw std::runtime_error("Error fork()");
