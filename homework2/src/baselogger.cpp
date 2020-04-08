@@ -5,54 +5,55 @@
 namespace log
 {
 
-BaseLogger::BaseLogger(Level lvl) noexcept
+BaseLogger::BaseLogger(Level lvl)
 {
     set_level(lvl);
 }
 
-BaseLogger::~BaseLogger()
-{
-}
-
 //вызов лог с уровнем DEBUG
-void BaseLogger::debug(const std::string& msg) noexcept
+void BaseLogger::debug(const std::string& msg)
 {
     log(msg, Level::DEBUG);
 }
 
 //вызов лог с уровнем INFO
-void BaseLogger::info(const std::string& msg) noexcept
+void BaseLogger::info(const std::string& msg)
 {
     log(msg, Level::INFO);
 }
 
 //вызов лог с уровнем WARNING
-void BaseLogger::warn(const std::string& msg) noexcept
+void BaseLogger::warn(const std::string& msg)
 {
     log(msg, Level::WARN);
 }
 
 //вызов лог с уровнем ERROR
-void BaseLogger::error(const std::string& msg) noexcept
+void BaseLogger::error(const std::string& msg)
 {
     log(msg, Level::ERROR);
 }
 
-void BaseLogger::set_level(Level lvl) noexcept
+void BaseLogger::set_level(Level lvl)
 {
-    level_ = lvl;
+    _level = lvl;
 }
 
-Level BaseLogger::level() noexcept
+Level BaseLogger::level() const
 {
-    return level_;
+    return _level;
+}
+
+const std::string& BaseLogger::getPrefix(Level lvl)
+{
+    return prefix.at(lvl);
 }
 
 //вызов кастомизированного лога с корректным уровнем
-void BaseLogger::log(const std::string& msg, Level lvl) noexcept
+void BaseLogger::log(const std::string& msg, Level lvl)
 {
-    if (lvl >= level_) {
-        log_custom(msg, lvl);
+    if (lvl >= _level) {
+        log_custom(getPrefix(lvl) + msg);
     }
 }
 

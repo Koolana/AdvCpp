@@ -3,6 +3,7 @@
 
 #include <memory>
 #include <string>
+#include <map>
 
 namespace log
 {
@@ -17,24 +18,33 @@ enum class Level{
 class BaseLogger
 {
 public:
-    explicit BaseLogger(Level lvl) noexcept;
-    virtual ~BaseLogger() = 0;
+    explicit BaseLogger(Level lvl);
+    virtual ~BaseLogger() = default;
 
-    void debug(const std::string& msg) noexcept;
-    void info(const std::string& msg) noexcept;
-    void warn(const std::string& msg) noexcept;
-    void error(const std::string& msg) noexcept;
+    void debug(const std::string& msg);
+    void info(const std::string& msg);
+    void warn(const std::string& msg);
+    void error(const std::string& msg);
 
-    void set_level(Level lvl) noexcept;
-    Level level() noexcept;
+    void set_level(Level lvl);
+    Level level() const;
 
-    virtual void flush() noexcept = 0;
+    virtual void flush() = 0;
 
 private:
-    Level level_;
+    Level _level;
 
-    void log(const std::string& msg, Level lvl) noexcept;
-    virtual void log_custom(const std::string& msg, Level lvl) noexcept = 0;
+    const std::map<Level, std::string> prefix{
+        std::make_pair(Level::DEBUG, "Debug: "),
+        std::make_pair(Level::INFO, "Info: "),
+        std::make_pair(Level::WARN, "Warn: "),
+        std::make_pair(Level::ERROR, "Error: ")
+    };
+
+    const std::string& getPrefix(Level lvl);
+
+    void log(const std::string& msg, Level lvl);
+    virtual void log_custom(const std::string& msg) = 0;
 };
 
 } //namespace log

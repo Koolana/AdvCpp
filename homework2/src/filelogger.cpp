@@ -3,49 +3,18 @@
 namespace log
 {
 
-FileLogger::FileLogger(const std::string& fileName, Level lvl) : BaseLogger(lvl), fd(fileName)
+FileLogger::FileLogger(const std::string& fileName, Level lvl) : BaseLogger(lvl), _fd(fileName)
 {
 }
 
-FileLogger::~FileLogger()
+void FileLogger::flush()
 {
+    _fd.flush();
 }
 
-void FileLogger::flush() noexcept
+void FileLogger::log_custom(const std::string& msg)
 {
-    fd.flush();
-}
-
-void FileLogger::log_custom(const std::string& msg, Level lvl) noexcept
-{
-    switch(lvl) //возможна разная кастомизация для различных логгеров
-    {
-    case Level::DEBUG:
-    {
-        fd << "Debug: ";
-        break;
-    }
-
-    case Level::INFO:
-    {
-        fd << "Info: ";
-        break;
-    }
-
-    case Level::WARN:
-    {
-        fd << "Warn: ";
-        break;
-    }
-
-    case Level::ERROR:
-    {
-        fd << "Error: ";
-        break;
-    }
-    }
-
-    fd << msg << std::endl;
+    _fd << msg << std::endl; //flush
 }
 
 std::unique_ptr<FileLogger> create_file_logger(const std::string& fileName, Level lvl)
@@ -53,4 +22,4 @@ std::unique_ptr<FileLogger> create_file_logger(const std::string& fileName, Leve
     return std::make_unique<FileLogger>(fileName, lvl);
 }
 
-}
+}//namespace log

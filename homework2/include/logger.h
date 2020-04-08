@@ -1,7 +1,7 @@
 #ifndef LOGGER
 #define LOGGER
 
-#include "baselogger.h"
+#include "stderrlogger.h"
 #include <memory>
 
 namespace log
@@ -12,23 +12,23 @@ class Logger
 public:
     static Logger& get_instance();
 
-    std::shared_ptr<BaseLogger> get_global_logger() const noexcept;
-    void set_global_logger(std::unique_ptr<BaseLogger> logger) noexcept;
+    std::shared_ptr<BaseLogger> get_global_logger() const;
+    void set_global_logger(std::shared_ptr<BaseLogger> logger);
 
 private:
-    Logger(){}
+    Logger() {set_global_logger(log::create_stderr_logger(log::Level::DEBUG));} //инициализируем по умолчанию stderr_logger'ом
     Logger(const Logger& root) = delete;
     Logger& operator=(const Logger&) = delete;
 
-    std::shared_ptr<BaseLogger> globalLogger;
+    std::shared_ptr<BaseLogger> _globalLogger;
 };
 
-void debug(const std::string& msg) noexcept;
-void info(const std::string& msg) noexcept;
-void warn(const std::string& msg) noexcept;
-void error(const std::string& msg) noexcept;
+void debug(const std::string& msg);
+void info(const std::string& msg);
+void warn(const std::string& msg);
+void error(const std::string& msg);
 
-}
+}//namespace log
 
 #endif // LOGGER
 

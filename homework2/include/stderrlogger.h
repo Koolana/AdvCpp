@@ -9,18 +9,17 @@ namespace log
 class StderrLogger: public BaseLogger
 {
 public:
-    explicit StderrLogger(Level lvl) noexcept;
-    ~StderrLogger();
+    explicit StderrLogger(Level lvl);
 
-    void flush() noexcept;
+    void flush();
 
 private:
-    void log_custom(const std::string& msg, Level lvl) noexcept;
+    void log_custom(const std::string& msg) override;
 };
 
 std::unique_ptr<StderrLogger> create_stderr_logger(Level lvl);
 
-}
+}//namespace log
 
 #endif // STDERRLOGGER
 

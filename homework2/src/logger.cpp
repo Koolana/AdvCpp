@@ -9,39 +9,39 @@ Logger& Logger::get_instance()
     return singLogger;
 }
 
-std::shared_ptr<BaseLogger> Logger::get_global_logger() const noexcept
+std::shared_ptr<BaseLogger> Logger::get_global_logger() const
 {
-    return globalLogger;
+    return _globalLogger;
 }
 
-//устанавливается глобальный логгер, переданный логгер больше нельзя использовать снаружи
-void Logger::set_global_logger(std::unique_ptr<BaseLogger> logger) noexcept
+//устанавливается глобальный логгер
+void Logger::set_global_logger(std::shared_ptr<BaseLogger> logger)
 {
-    globalLogger = std::move(logger);
+    _globalLogger = std::move(logger);
 }
 
-void debug(const std::string& msg) noexcept
+void debug(const std::string& msg)
 {
-    Logger::get_instance().get_global_logger()->debug(msg);
-    Logger::get_instance().get_global_logger()->flush();
+    auto logger = Logger::get_instance().get_global_logger();
+    logger->debug(msg);
 }
 
-void info(const std::string& msg) noexcept
+void info(const std::string& msg)
 {
-    Logger::get_instance().get_global_logger()->info(msg);
-    Logger::get_instance().get_global_logger()->flush();
+    auto logger = Logger::get_instance().get_global_logger();
+    logger->info(msg);
 }
 
-void warn(const std::string& msg) noexcept
+void warn(const std::string& msg)
 {
-    Logger::get_instance().get_global_logger()->warn(msg);
-    Logger::get_instance().get_global_logger()->flush();
+    auto logger = Logger::get_instance().get_global_logger();
+    logger->warn(msg);
 }
 
-void error(const std::string& msg) noexcept
+void error(const std::string& msg)
 {
-    Logger::get_instance().get_global_logger()->error(msg);
-    Logger::get_instance().get_global_logger()->flush();
+    auto logger = Logger::get_instance().get_global_logger();
+    logger->error(msg);
 }
 
-}
+}//namespace log

@@ -11,18 +11,18 @@ class FileLogger: public BaseLogger
 {
 public:
     explicit FileLogger(const std::string& fileName, Level lvl);
-    ~FileLogger();
 
-    void flush() noexcept;
+    void flush();
 
 private:
-    std::ofstream fd;
+    std::ofstream _fd;
 
-    void log_custom(const std::string& msg, Level lvl) noexcept;
+    void log_custom(const std::string& msg) override;
 };
 
 std::unique_ptr<FileLogger> create_file_logger(const std::string& fileName, Level lvl);
-}
+
+}//namespace log
 
 #endif // FILELOGGER
 
