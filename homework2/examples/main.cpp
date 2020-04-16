@@ -13,8 +13,7 @@ int main()
     stdoutLog.warn("Test message - Warning");
     stdoutLog.error("Test message - Error");
 
-
-    log::Logger::get_instance().set_global_logger(log::create_stderr_logger(log::Level::WARN));
+    //log::Logger::get_instance().set_global_logger(log::create_stderr_logger(log::Level::WARN));
     log::debug("Singleton debug");
     log::info("Singleton info");
     log::warn("Singleton warning");

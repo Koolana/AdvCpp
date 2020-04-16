@@ -16,7 +16,7 @@ public:
     void set_global_logger(std::shared_ptr<BaseLogger> logger);
 
 private:
-    Logger() {set_global_logger(log::create_stderr_logger(log::Level::DEBUG));} //инициализируем по умолчанию stderr_logger'ом
+    Logger() : _globalLogger{create_stderr_logger(log::Level::DEBUG)} {} //инициализируем по умолчанию stderr_logger'ом
     Logger(const Logger& root) = delete;
     Logger& operator=(const Logger&) = delete;
 

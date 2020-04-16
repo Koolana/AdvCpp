@@ -46,7 +46,14 @@ Level BaseLogger::level() const
 
 const std::string& BaseLogger::getPrefix(Level lvl)
 {
-    return prefix.at(lvl);
+    const std::map<Level, std::string> LOG_LEVEL_PREFIX{
+        {Level::DEBUG, "Debug: "},
+        {Level::INFO, "Info: "},
+        {Level::WARN, "Warn: "},
+        {Level::ERROR, "Error: "}
+    };
+
+    return LOG_LEVEL_PREFIX.at(lvl);
 }
 
 //вызов кастомизированного лога с корректным уровнем

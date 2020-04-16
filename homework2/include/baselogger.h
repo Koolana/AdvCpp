@@ -34,13 +34,6 @@ public:
 private:
     Level _level;
 
-    const std::map<Level, std::string> prefix{
-        std::make_pair(Level::DEBUG, "Debug: "),
-        std::make_pair(Level::INFO, "Info: "),
-        std::make_pair(Level::WARN, "Warn: "),
-        std::make_pair(Level::ERROR, "Error: ")
-    };
-
     const std::string& getPrefix(Level lvl);
 
     void log(const std::string& msg, Level lvl);

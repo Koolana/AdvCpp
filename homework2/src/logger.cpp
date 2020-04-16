@@ -20,6 +20,8 @@ void Logger::set_global_logger(std::shared_ptr<BaseLogger> logger)
     _globalLogger = std::move(logger);
 }
 
+//при первом вызове Logger::get_instance() создается logger по умолчанию
+//следовательно _globalLogger не может быть пустым, разве нет?
 void debug(const std::string& msg)
 {
     auto logger = Logger::get_instance().get_global_logger();
