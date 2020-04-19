@@ -19,6 +19,12 @@ int main()
     log::warn("Singleton warning");
     log::error("Singleton error");
 
+    log::Logger::get_instance().set_global_logger(NULL);
+    log::debug("Singleton debug");
+    log::info("Singleton info");
+    log::warn("Singleton warning");
+    log::error("Singleton error");
+
     return 0;
 }
 
