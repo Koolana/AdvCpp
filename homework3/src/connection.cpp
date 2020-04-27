@@ -26,11 +26,6 @@ Connection::Connection(int fd, const sockaddr_in& addr) :
 
 }
 
-Connection::~Connection()
-{
-
-}
-
 size_t Connection::write(const void* data, size_t len)
 {
     ssize_t numByte = ::write(_fd.get_fd(), data, len);
@@ -112,9 +107,11 @@ void Connection::set_timeout(int sec)
     }
 }
 
-const std::string& Connection::getDstAddr() const
+const std::string Connection::getDstAddr() const
 {
-    return *(new std::string(::inet_ntoa(_dst_addr)));
+    return std::string(::inet_ntoa(_dst_addr)); //быстрее чем return *(new std::string(::inet_ntoa(_dst_addr)));
+                                                //т.к позволяет компилятору задействовать RVO (Return Value Optimization)
+                                                //меньше системных вызовов
 }
 
 uint16_t Connection::getDstPort() const

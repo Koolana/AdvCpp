@@ -18,19 +18,14 @@ Server::Server(const std::string& addr, uint16_t port, int numConnect) :
     open(addr, port, numConnect);
 }
 
-Server::~Server()
-{
-
-}
-
-Connection& Server::accept()
+Connection Server::accept()
 {
     sockaddr_in client_addr;
     socklen_t addr_size = sizeof(client_addr);
 
     int fd = ::accept(_fd.get_fd(), (sockaddr*)&client_addr, &addr_size);
 
-    return *(new Connection(fd, client_addr));
+    return Connection(fd, client_addr);
 }
 
 void Server::set_max_connect(int numConnect)

@@ -21,9 +21,14 @@ int main()
             connection.readExact(&numChar, sizeof(size_t));
             std::cout << "Number of char from server: "<< numChar << std::endl;
 
-            char buff[numChar];
-            connection.readExact(buff, numChar);
-            std::cout << "From server: " << buff << std::endl;
+            std::string msg;
+
+            if(connection.is_opened() && numChar > 0) {
+                msg.resize(numChar);
+                connection.readExact(msg.begin().base(), numChar);
+
+                std::cout << "From client: " << msg << std::endl;
+            }
 
             std::cout << "Input: ";
             std::getline(std::cin, str);

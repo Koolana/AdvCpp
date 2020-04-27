@@ -11,9 +11,9 @@ class Server
 {
 public:
     Server(const std::string& addr, uint16_t port, int numConnect = 5);
-    ~Server();
+    ~Server() {}
 
-    Connection& accept();
+    Connection accept();
 
     void set_max_connect(int num);
 

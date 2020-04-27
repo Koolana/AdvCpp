@@ -14,7 +14,7 @@ class Connection
     friend class Server;
 public:
     Connection(const std::string& addr, uint16_t port);
-    ~Connection();
+    ~Connection() {}
 
     size_t write(const void* data, size_t len);
     size_t read(void* data, size_t len);
@@ -27,7 +27,7 @@ public:
 
     void set_timeout(int sec);
 
-    const std::string& getDstAddr() const;
+    const std::string getDstAddr() const;
     uint16_t getDstPort() const;
 
 private:
