@@ -1,5 +1,6 @@
 #include "connection.h"
 #include <arpa/inet.h>
+#include <utility>
 #include "socketexception.h"
 
 namespace tcp
@@ -23,12 +24,14 @@ Connection::Connection(int fd, const sockaddr_in& addr) :
     _dst_port(addr.sin_port),
     _fd(fd)
 {
-
 }
 
-Connection::~Connection()
+Connection::Connection(Connection&& other) :
+    _fd(other._fd.extract()),
+    _flag_opened(false),
+    _dst_addr(other._dst_addr),
+    _dst_port(other._dst_port)
 {
-
 }
 
 size_t Connection::write(const void* data, size_t len)
@@ -74,6 +77,10 @@ void Connection::readExact(void* data, size_t len)
             return;
         }
 
+        for (size_t i = 0; i < temp_s; i++) { //записываем сколько сумели считали, чтобы в след раз попытаться прочесть всю пачку до конца
+            _data.push_back(*((char*)data + i + s));
+        }
+
         s += temp_s;
     }
 }
@@ -84,9 +91,19 @@ void Connection::close()
     _flag_opened = false;
 }
 
+void Connection::clear_data()
+{
+    _data.clear();
+}
+
 bool Connection::is_opened() const
 {
     return _flag_opened;
+}
+
+bool Connection::is_data_ready() const
+{
+    return _data.size() >= _waitBytes;
 }
 
 void Connection::set_timeout(int sec)
@@ -112,14 +129,39 @@ void Connection::set_timeout(int sec)
     }
 }
 
-const std::string& Connection::getDstAddr() const
+void Connection::set_epoll_events(uint32_t events)
 {
-    return *(new std::string(::inet_ntoa(_dst_addr)));
+    _events = events;
+}
+
+void Connection::set_wait_bytes(size_t numBytes)
+{
+    _waitBytes = numBytes;
+}
+
+uint32_t Connection::get_epoll_events() const
+{
+    return _events;
+}
+
+const std::string Connection::getDstAddr() const
+{
+    return std::string(::inet_ntoa(_dst_addr));
 }
 
 uint16_t Connection::getDstPort() const
 {
     return ::ntohs(_dst_port);
+}
+
+size_t Connection::get_count_bytes() const
+{
+    return _data.size();
+}
+
+std::string Connection::get_data() const
+{
+    return _data;
 }
 
 void Connection::connect(const std::string& addr, uint16_t port)
